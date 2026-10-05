@@ -357,6 +357,10 @@ START-HERE.bat --calibrate                      tune the engine for this PC (abo
 ```
 
 With more than one model installed, it asks which one to start. `run-<model>.bat` starts a model directly.
+On Linux `run-<model>.sh` takes an optional context, `./run-iq2_xs.sh 512K` (or `131072`, `1M`): it writes
+`strata-<model>.ctx<N>.json` next to the setup-written config (which is not changed) with that `--max-context`, yarn
+rope scaling past 262,144 (experimental), `--kv int8` above 8K, and KV streaming where setup would keep it
+(`tools/context_config.py`). Without an argument the start is unchanged.
 
 **Tuning for your PC (`--calibrate`, engine 0.1.19).** Three engine settings depend on the PC more than on the model:
 - the share of the experts missing from VRAM that are copied to the GPU instead of computed by the CPU

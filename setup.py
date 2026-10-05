@@ -3459,9 +3459,22 @@ def write_run_script(model, cfg_path, port, open_browser=True):
         script.write_text("@echo off\r\ntitle Strata " + model + "\r\ncd /d \"" + str(ROOT) + "\"\r\n" +
                           " ".join(f'"{x}"' for x in serve) + "\r\nif errorlevel 1 pause\r\n", encoding="utf-8")
     else:
+        # an optional first argument runs this start at another context (1M, 512K, 131072): a config derived by
+        # tools/context_config.py next to the setup-written one, which stays as it is
         script = ROOT / f"run-{model.lower()}.sh"
-        script.write_text("#!/bin/sh\ncd \"" + str(ROOT) + "\"\nexec " + " ".join(f'"{x}"' for x in serve) + "\n",
-                          encoding="utf-8")
+        q = lambda x: f'"{x}"'                         # noqa: E731
+        i = serve.index("--config") + 1
+        script.write_text(
+            "#!/bin/sh\n"
+            f"# usage: {script.name} [CONTEXT]   CONTEXT: tokens or with a K/M suffix (131072, 512K, 1M);\n"
+            "# without it: the context setup chose.  Past 256K the engine adds yarn rope scaling (experimental).\n"
+            f"cd {q(ROOT)}\n"
+            f"CFG={q(cfg_path)}\n"
+            "if [ -n \"$1\" ]; then\n"
+            f"  CFG=$({q(sys.executable)} {q(ROOT / 'tools' / 'context_config.py')} \"$CFG\" \"$1\") || exit 1\n"
+            "fi\n"
+            "exec " + " ".join([*map(q, serve[:i]), '"$CFG"', *map(q, serve[i + 1:])]) + "\n",
+            encoding="utf-8")
         script.chmod(0o755)
     return script
 
