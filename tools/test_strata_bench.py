@@ -186,6 +186,14 @@ class RedactionTests(unittest.TestCase):
         if len(user) >= 4:
             self.assertNotIn(user, red(f"hello {user} world"))
 
+    def test_the_strata_folder_goes_before_the_user_name_inside_it(self):
+        # /home/<name>/apps/Strata: the user name's word pattern used to sort first and break the folder's match
+        with mock.patch.object(B, "ROOT", Path("/home/tester/apps/Strata")), \
+                mock.patch("getpass.getuser", return_value="tester"):
+            red = B.redactor()
+        self.assertEqual(red("loading /home/tester/apps/Strata/strata-x.json"), "loading <strata>/strata-x.json")
+        self.assertEqual(red("hello tester"), "hello <user>")
+
     def test_objects_are_redacted_deeply(self):
         red = B.redactor()
         out = B.redact_obj({"a": [{"p": r"D:\Users\zed\x"}], "n": 3}, red)
